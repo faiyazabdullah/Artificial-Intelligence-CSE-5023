@@ -1,0 +1,102 @@
+import heapq
+
+class Node:
+    def __init__(self, position, g_cost, h_cost):
+        self.position = position  # The position (row, column) of the node
+        self.g_cost = g_cost  # Cost from start to current node
+        self.h_cost = h_cost  # Heuristic cost (Manhattan distance to goal)
+        self.f_cost = g_cost + h_cost  # f_cost = (g_cost + h_cost)
+        self.parent = None  # Parent node for backtracking
+
+    def __lt__(self, other):
+        return self.f_cost < other.f_cost
+
+def manhattan_distance(p1, p2):
+    # Calculate the Manhattan distance between two points
+    return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+
+def is_valid_move(row, col, rows, cols, grid):
+    # Check if a move to the specified row and column is valid
+    return 0 <= row < rows and 0 <= col < cols and grid[row][col] != 'B'
+
+def get_neighbors(row, col, rows, cols, grid):
+    # Get valid neighboring cells of the specified cell
+    neighbors = []
+    moves = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # right, left, down, up
+
+    for move in moves:
+        new_row, new_col = row + move[0], col + move[1]
+        if is_valid_move(new_row, new_col, rows, cols, grid):
+            neighbors.append((new_row, new_col))
+
+    return neighbors
+
+def a_star_search(grid):
+    rows = len(grid)
+    cols = len(grid[0])
+
+    start = (0, 0)
+    goal = (rows - 1, cols - 1)
+
+    priority_queue = []  # Priority queue to store nodes to be explored
+    visited_set = set()  # Set to store visited nodes
+
+    start_node = Node(start, 0, manhattan_distance(start, goal))
+    heapq.heappush(priority_queue, start_node)
+
+    while priority_queue:
+        current_node = heapq.heappop(priority_queue)
+
+        if current_node.position == goal:
+            # Goal reached, construct the optimal path
+            path = []
+            cost = current_node.g_cost
+            while current_node:
+                path.append(current_node.position)
+                current_node = current_node.parent
+            path.reverse()  # Reverse the path to get it from start to goal
+            return path, cost
+
+        visited_set.add(current_node.position)
+
+        neighbors = get_neighbors(
+            current_node.position[0], current_node.position[1], rows, cols, grid
+        )
+
+        for neighbor in neighbors:
+            if neighbor in visited_set:
+                continue  # Skip already visited nodes
+
+            g_cost = current_node.g_cost + 1  # Increment g_cost by 1 for each step
+            h_cost = manhattan_distance(neighbor, goal)
+            f_cost = g_cost + h_cost
+            neighbor_node = Node(neighbor, g_cost, h_cost)
+            neighbor_node.parent = current_node  # Set the parent node for backtracking
+
+            heapq.heappush(priority_queue, neighbor_node)
+
+    return None, None  # No path found
+
+def read_grid_from_file(file_path):
+    grid = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            row = list(line.strip())
+            grid.append(row)
+    return grid
+
+file_path = 'input.txt'  # Specify the path to your input file
+grid = read_grid_from_file(file_path)
+
+# Print the grid
+for row in grid:
+    print(row)
+
+
+path, cost = a_star_search(grid)
+
+if path is None:
+    print("No path found!")
+else:
+    print("Optimal path:", path)
+    print("Cost:", cost)

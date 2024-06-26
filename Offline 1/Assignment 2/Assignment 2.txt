@@ -1,0 +1,224 @@
+import pandas as pd
+import math
+import heapq
+
+
+def read_distances(filename):
+    # Read the distances from the file and create an empty dictionary to store them
+    distances_df = pd.read_csv(filename, sep='\t', header=None)
+    distances = {}
+
+    # Iterate over each row in the distances DataFrame
+    for _, row in distances_df.iterrows():
+        star1 = row[0]
+        star2 = row[1]
+        distance = row[2]
+
+        # Check if star1 already exists in distances, if not, add it as a key with an empty dictionary as its value
+        if star1 not in distances:
+            distances[star1] = {}
+
+        # Assign the distance value to the corresponding star1 and star2 in distances dictionary
+        distances[star1][star2] = distance
+
+    # Return the distances dictionary
+    return distances
+
+
+def read_coordinates(filename):
+    # Read the coordinates from the file and create an empty dictionary to store them
+    coordinates_df = pd.read_csv(filename, sep='\t')
+    coordinates = {}
+
+    # Iterate over each row in the coordinates DataFrame
+    for _, row in coordinates_df.iterrows():
+        star = row['Star']
+        x = row['x']
+        y = row['y']
+        z = row['z']
+
+        # Assign the coordinates (x, y, z) to the corresponding star in the coordinates dictionary
+        coordinates[star] = (x, y, z)
+
+    # Return the coordinates dictionary
+    return coordinates
+
+
+def calculate_euclidean_distance(coord1, coord2):
+    # Extract x, y, z coordinates from coord1 and coord2
+    x1, y1, z1 = coord1
+    x2, y2, z2 = coord2
+
+    # Calculate the Euclidean distance between the two coordinates using the formula
+    distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+
+    # Return the calculated distance
+    return distance
+
+
+def build_graph(distances, coordinates):
+    # Create an empty dictionary to store the graph representation
+    graph = {}
+
+    # Iterate over each star1 and its neighbors in distances
+    for star1, neighbors in distances.items():
+        graph[star1] = {}
+
+        # Iterate over each star2 and its distance from star1
+        for star2, distance in neighbors.items():
+
+            # Check if star2 exists in coordinates, if not, skip this neighbor
+            if star2 not in coordinates:
+                continue
+
+            # Get the coordinates of star1 and star2
+            coord1 = coordinates[star1]
+            coord2 = coordinates[star2]
+            # Calculate the Euclidean distance between the coordinates of star1 and star2
+            euclidean_distance = calculate_euclidean_distance(coord1, coord2)
+
+            # Add the neighbor and its associated distance and Euclidean distance to the graph
+            graph[star1][star2] = {
+                'distance': distance,
+                'euclidean_distance': euclidean_distance
+            }
+
+    # Return the graph
+    return graph
+
+
+def dijkstra(graph, start, end):
+    # Create a dictionary to store the shortest distances from the start node to each node in the graph
+    distances = {star: float('inf') for star in graph}
+    distances[start] = 0
+
+    # Create a dictionary to store the previous nodes in the shortest path
+    previous = {star: None for star in graph}
+
+    # Create a priority queue to store nodes with their distances
+    queue = [(0, start)]
+
+    # Dijkstra's algorithm
+    while queue:
+        current_distance, current_star = heapq.heappop(queue)
+
+        # If the current node is the destination node, construct the shortest path and return it
+        if current_star == end:
+            path = []
+            while current_star is not None:
+                path.insert(0, current_star)
+                current_star = previous[current_star]
+            return path
+
+        # If the current distance is greater than the distance stored for the current node, skip it
+        if current_distance > distances[current_star]:
+            continue
+        
+        # Explore the neighbors of the current node
+        for neighbor, edge in graph[current_star].items():
+            neighbor_distance = distances[current_star] + edge['distance']
+
+            # If the new distance is smaller than the distance stored for the neighbor, update the distance and previous node
+            if neighbor_distance < distances[neighbor]:
+                distances[neighbor] = neighbor_distance
+                previous[neighbor] = current_star
+
+                # Add the neighbor and its distance to the queue
+                heapq.heappush(queue, (neighbor_distance, neighbor))
+
+    # If no path is found, return None
+    return None
+
+
+def heuristic_estimate(start, end, coordinates):
+    # Get the coordinates of the start and end nodes
+    start_coord = coordinates[start]
+    end_coord = coordinates[end]
+
+    # Calculate the Euclidean distance between the start and end coordinates
+    return calculate_euclidean_distance(start_coord, end_coord)
+
+
+def a_star(graph, start, end, coordinates):
+    # Create a dictionary to store the shortest distances from the start node to each node in the graph
+    distances = {star: float('inf') for star in graph}
+    distances[start] = 0
+
+    # Create a dictionary to store the previous nodes in the shortest path
+    previous = {star: None for star in graph}
+
+    # Create a priority queue to store nodes with their distances
+    queue = [(heuristic_estimate(start, end, coordinates), 0, start)]
+
+    # A* algorithm
+    while queue:
+        _, current_distance, current_star = heapq.heappop(queue)
+
+        # If the current node is the destination node, construct the shortest path and return it
+        if current_star == end:
+            path = []
+            while current_star is not None:
+                path.insert(0, current_star)
+                current_star = previous[current_star]
+            return path
+
+        # If the current distance is greater than the distance stored for the current node, skip it
+        if current_distance > distances[current_star]:
+            continue
+
+        # Explore the neighbors of the current node
+        for neighbor, edge in graph[current_star].items():
+            neighbor_distance = distances[current_star] + edge['distance']
+            
+            # If the new distance is smaller than the distance stored for the neighbor, update the distance and previous node
+            if neighbor_distance < distances[neighbor]:
+                distances[neighbor] = neighbor_distance
+                previous[neighbor] = current_star
+                
+                # Add the neighbor and its distance to the queue
+                heapq.heappush(
+                    queue,
+                    (
+                        neighbor_distance + heuristic_estimate(neighbor, end, coordinates),
+                        neighbor_distance,
+                        neighbor
+                    )
+                )
+
+    # If no path is found, return None
+    return None
+
+distances = read_distances('distances.txt')
+coordinates = read_coordinates('Coordinates.txt')
+
+graph = build_graph(distances, coordinates)
+
+# Shortest path from Sun to Upsilon Andromedae
+print("Dijkstra's Algorithm:")
+path_dijkstra = dijkstra(graph, 'Sun', 'Upsilon Andromedae')
+if path_dijkstra:
+    print("Shortest path:", ' -> '.join(path_dijkstra))
+else:
+    print("No path found")
+
+print("\nA* Algorithm:")
+path_astar = a_star(graph, 'Sun', 'Upsilon Andromedae', coordinates)
+if path_astar:
+    print("Shortest path:", ' -> '.join(path_astar))
+else:
+    print("No path found")
+
+# Shortest path from Sun to 61 Virginis
+print("\nDijkstra's Algorithm:")
+path_dijkstra = dijkstra(graph, 'Sun', '61 Virginis')
+if path_dijkstra:
+    print("Shortest path:", ' -> '.join(path_dijkstra))
+else:
+    print("No path found")
+
+print("\nA* Algorithm:")
+path_astar = a_star(graph, 'Sun', '61 Virginis', coordinates)
+if path_astar:
+    print("Shortest path:", ' -> '.join(path_astar))
+else:
+    print("No path found")
