@@ -1,0 +1,50 @@
+Binary Logistic Regression
+--------------------------
+
+Dataset preparation:
+---------------------
+1. Use dataset diabetes. Code for loading dataset into 2D python list.
+2. Randomly Split the dataset into Training (70%), Validation (15%) and Test (15%) set
+
+Train (update 𝚹):
+------------------
+1. for each sample, X = [x1, x2, … , xn] in TRAINING set:
+2. 	concatenate 1 and turn it into X’ = [x1, x2, …, xn, 1]
+3. randomly initialize 𝚹 = [𝚹1, 𝚹2, …, 𝚹(n+1)] within 0 to 1 // 𝚹1, 𝚹2, …: weights, 𝚹(n+1): bias
+4. max_iter = 500, lr = 0.01
+5. history = list()
+6. for itr in [1, max_iter]:
+7. 	TJ = 0 // total cost
+8. 	for each sample, X’, in TRAINING set:
+9. 		z = X’ . 𝚹 // use np.dot function
+10. 		h = sigmoid(z) // sigmoid available in python
+11. 		J = - y log (h) - (1-y) log (1-h) // h = pred label, y = true label
+12. 		TJ = TJ + J
+13. 		dv = X’ . (h-y) // dim(dv)=n+1
+14. 		𝚹 = 𝚹 - dv * lr // dim(𝚹)=n+1, lr = learning rate
+15. 	TJ = (TJ / N_train) // N_train = #training samples
+16. 	append TJ into history // average loss
+
+Validation:
+------------
+1. correct = 0
+2. for each sample V’ in the VALIDATION set:
+3. 	z = V’.𝚹
+4. 	h = sigmoid(z)
+5. 	if h >= 0.5:h = 1
+6. 	else: h = 0
+7. 	if h == y: correct = correct + 1
+8. val_acc = correct * 100 / N_val // N_val = #validation samples
+
+Task:
+-----
+1. Calculate validation accuracy (val_acc) for lr = 0.1, 0.01, 0.001 and 0.0001 (max_iter
+= 500)
+2. Make a table with 2 columns: learning rate lr and val_acc
+3. Now, take the lr with maximum val_acc
+4. Calculate test accuracy for max_iter = 500 and the chosen lr in the previous step
+5. Plot the train_loss (history) vs epoch (iteration) graph
+
+Instruction:
+------------
+DO NOT USE LIBRARIES SUCH AS: "Sklearn", "Scikit learning" or "pandas"
