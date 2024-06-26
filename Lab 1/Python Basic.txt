@@ -1,0 +1,23 @@
+Python Primitive Data Type:
+
+1. Number
+	Integer
+	Floating Point
+	Complex
+2. Boolean
+3. String
+	'A'
+	"A"
+	"AB"
+	"""Hello Students. Welcome to our AI Lab"""
+
+Input function returns -> String
+We have to convert it by declaring the data type.
+
+Negative index can access reverse.
+
+Opertaors:
+1. Arithmetic
+2. Logical (and, or, not)
+3. Relational (<, >, == , !=, >=, <=)
+4. Shorthand (+=, -=, *=)
